@@ -1,4 +1,14 @@
-FROM ubuntu:latest
-LABEL authors="nghia"
+FROM apache/airflow:3.1.5
 
-ENTRYPOINT ["top", "-b"]
+USER airflow
+
+RUN pip install uv --upgrade
+
+
+RUN uv pip install \
+    "apache-airflow==3.1.5" \
+    "apache-airflow-providers-docker" \
+    "torch" \
+    "torchvision" \
+    "feast" \
+    "pymilvus"

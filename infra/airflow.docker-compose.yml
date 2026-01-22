@@ -49,8 +49,8 @@ x-airflow-common:
   # In order to add custom dependencies or upgrade provider distributions you can use your extended image.
   # Comment the image line, place your Dockerfile in the directory where you placed the airflow.docker-compose.yml
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
-  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:3.1.5}
-  # build: .
+#  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:3.1.5}
+  build: .
   env_file:
     - ${ENV_FILE_PATH:-.env}
   environment:
@@ -86,6 +86,9 @@ x-airflow-common:
       condition: service_healthy
     postgres:
       condition: service_healthy
+  networks:
+    - default
+    - datastore
 
 services:
   postgres:
@@ -96,6 +99,8 @@ services:
       POSTGRES_DB: airflow
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 10s
@@ -335,3 +340,8 @@ services:
 
 volumes:
   postgres-db-volume:
+
+networks:
+  datastore:
+    name: datastore
+    external: true
