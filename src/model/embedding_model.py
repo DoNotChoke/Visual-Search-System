@@ -1,6 +1,12 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
+from PIL.Image import Image
+
+from typing import List
+
+from model.transform import transform
 
 
 class ResNetEmbedding(nn.Module):
@@ -31,4 +37,30 @@ class ResNetEmbedding(nn.Module):
         x = self.backbone(x)
         x = self.head(x)
         return F.normalize(x, p=2, dim=1)
+
+
+def get_model(ckpt_path: str):
+    model = ResNetEmbedding(pretrained=False)
+    state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=True)
+    state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
+    model.load_state_dict(state_dict, strict=True)
+    model.eval()
+    return model
+
+
+def embed(model, imgs: List[Image]) -> List[List[float]]:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    xs = []
+    for img in imgs:
+        x = transform(img).unsqueeze(0)
+        xs.append(x)
+    x = torch.cat(xs, dim=0).to(device)
+
+    with torch.no_grad():
+        emb = model(x)
+
+    emb = emb.detach().cpu().flatten(1)
+    emb = emb.to(torch.float32)
+
+    return [row.tolist() for row in emb]
 
